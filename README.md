@@ -41,6 +41,7 @@ The following TI devices are supported:
     * [CC2640R2F]
 * **CC13x1/CC26x1**:
     * [CC1311P3]
+    * [CC2651P3]
 * **CC13x2/CC26x2**:
     * [CC1312R]
     * [CC1352P]
@@ -193,6 +194,24 @@ Powered by flash-rover!
 ```
 
 
+Erase the first 4096 bytes (offset 0, length 4096) of the external flash on a CC1310 LaunchPad:
+
+```bash
+$ flash-rover \
+    --device cc1310 \
+    --xds L200005Z \
+    erase 0 4096
+```
+
+Mass erase the entire external flash on a CC1310 LaunchPad:
+
+```bash
+$ flash-rover \
+    --device cc1310 \
+    --xds L200005Z \
+    erase --mass-erase
+```
+
 ## How it works
 
 *flash-rover* connects to the TI device through the [Debug Server Scripting
@@ -240,6 +259,7 @@ You must then copy the `flash-rover/` folder under `output/` to the
 [CCS]:       http://www.ti.com/tool/CCSTUDIO
 [CC1310]:    http://www.ti.com/product/CC1310
 [CC1311P3]:  https://www.ti.com/product/CC1311P3
+[CC2651P3]:  https://www.ti.com/product/CC2651P3
 [CC1312R]:   http://www.ti.com/product/CC1312R
 [CC1350]:    http://www.ti.com/product/CC1350
 [CC1352P]:   http://www.ti.com/product/CC1352P
