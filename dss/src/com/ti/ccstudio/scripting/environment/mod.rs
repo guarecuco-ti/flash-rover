@@ -11,7 +11,7 @@ use jni::{objects::JObject, JNIEnv};
 
 use crate::com::ti::debug::engine::scripting::DebugServer;
 
-type Result<T, E = jni::errors::Error> = std::result::Result<T, E>;
+type Result<T, E = crate::Error> = std::result::Result<T, E>;
 
 #[derive(Copy, Clone, Debug)]
 pub enum TraceLevel {
@@ -76,7 +76,10 @@ impl<'a> ScriptingEnvironment<'a> {
 
         let class = env.find_class(ScriptingEnvironment::CLASS)?;
 
-        let instance = env.call_static_method(class, METHOD, SIGNATURE, &[])?.l()?;
+        let instance = env
+            .call_static_method(class, METHOD, SIGNATURE, &[])
+            .map_err(|e| crate::extract_exception(&env, e))?
+            .l()?;
 
         Ok(Self { env, instance })
     }
@@ -89,7 +92,8 @@ impl<'a> ScriptingEnvironment<'a> {
 
         let debug_server = self
             .env
-            .call_method(self.instance, METHOD, SIGNATURE, &[From::from(file_name)])?
+            .call_method(self.instance, METHOD, SIGNATURE, &[From::from(file_name)])
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .l()?;
 
         assert!(self
@@ -113,7 +117,8 @@ impl<'a> ScriptingEnvironment<'a> {
                 METHOD,
                 SIGNATURE,
                 &[From::from(file_name), From::from(stylesheet_name)],
-            )?
+            )
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .v()?;
 
         Ok(())
@@ -124,7 +129,8 @@ impl<'a> ScriptingEnvironment<'a> {
         const SIGNATURE: &str = "()V";
 
         self.env
-            .call_method(self.instance, METHOD, SIGNATURE, &[])?
+            .call_method(self.instance, METHOD, SIGNATURE, &[])
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .v()?;
 
         Ok(())
@@ -137,7 +143,8 @@ impl<'a> ScriptingEnvironment<'a> {
         let level = JObject::from(self.env.new_string(trace_level.to_string())?);
 
         self.env
-            .call_method(self.instance, METHOD, SIGNATURE, &[From::from(level)])?
+            .call_method(self.instance, METHOD, SIGNATURE, &[From::from(level)])
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .v()?;
 
         Ok(())
@@ -150,7 +157,8 @@ impl<'a> ScriptingEnvironment<'a> {
         let level = JObject::from(self.env.new_string(trace_level.to_string())?);
 
         self.env
-            .call_method(self.instance, METHOD, SIGNATURE, &[From::from(level)])?
+            .call_method(self.instance, METHOD, SIGNATURE, &[From::from(level)])
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .v()?;
 
         Ok(())
@@ -163,7 +171,8 @@ impl<'a> ScriptingEnvironment<'a> {
         let timeout = timeout.as_millis() as jni::sys::jint;
 
         self.env
-            .call_method(self.instance, METHOD, SIGNATURE, &[From::from(timeout)])?
+            .call_method(self.instance, METHOD, SIGNATURE, &[From::from(timeout)])
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .v()?;
 
         Ok(())

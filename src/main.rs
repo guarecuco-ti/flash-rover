@@ -7,6 +7,7 @@ extern crate byte_unit;
 #[macro_use]
 extern crate clap;
 extern crate dss;
+extern crate libc;
 extern crate path_clean;
 extern crate path_slash;
 extern crate rust_embed;
@@ -16,12 +17,11 @@ extern crate tempfile;
 
 use std::env;
 use std::path::PathBuf;
-use std::process;
 use std::str::FromStr;
 
 use dss::{com::ti::ccstudio::scripting::environment::TraceLevel, Dss};
 
-use snafu::{Backtrace, ErrorCompat, OptionExt, ResultExt, Snafu};
+use snafu::{Backtrace, OptionExt, ResultExt, Snafu};
 
 use args::Args;
 use dss_logger::DssLogger;
@@ -34,6 +34,7 @@ mod command;
 mod dss_logger;
 mod firmware;
 mod flash_rover;
+mod scan;
 mod types;
 mod xflash;
 
@@ -58,6 +59,10 @@ enum Error {
         source: flash_rover::Error,
         backtrace: Backtrace,
     },
+    ScanError {
+        source: scan::Error,
+        backtrace: Backtrace,
+    },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -65,10 +70,10 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 fn main() {
     if let Err(err) = run() {
         eprintln!("Error: {}", err);
-        if let Some(backtrace) = ErrorCompat::backtrace(&err) {
-            eprintln!("{}", backtrace);
-        }
-        process::exit(1);
+        // Use _exit() instead of process::exit() to bypass libc atexit handlers.
+        // The JVM registers atexit handlers that crash when a DSS background thread
+        // is still unwinding after a session timeout, causing a spurious segfault.
+        unsafe { libc::_exit(1) };
     }
 }
 
@@ -76,6 +81,12 @@ fn run() -> Result<()> {
     let args = Args::parse().context(ArgsError {})?;
 
     let ccs_root = get_ccs_root().context(NoCCSDir {})?;
+
+    if args.is_scan() {
+        scan::run(&ccs_root).context(ScanError {})?;
+
+        return Ok(());
+    }
     let command = args.command(&ccs_root).context(ArgsError {})?;
 
     let trace_level = TraceLevel::from_str(&command.log_dss).unwrap_or(TraceLevel::Off);
@@ -91,12 +102,25 @@ fn run() -> Result<()> {
         .context(FlashRoverError {});
 
     if let Err(err) = status {
+        let err_str = err.to_string().to_lowercase();
+
+        if err_str.contains("timed out")
+            || err_str.contains("firmware")
+            || err_str.contains("upgrade")
+        {
+            eprintln!(
+                "Note: The XDS110 firmware may have been updated. \
+                 Disconnect and reconnect the probe, then run the command again."
+            );
+        }
+
         if let Some(dss_log_path) = dss_log.keep() {
             eprintln!(
                 "A DSS error occured with DSS logging enabled, check the log file here: {}",
                 dss_log_path.display()
             );
         }
+
         return Err(err);
     };
 

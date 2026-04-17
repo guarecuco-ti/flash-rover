@@ -142,7 +142,7 @@ impl str::FromStr for Device {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use Device::*;
 
-        match s {
+        match s.to_ascii_lowercase().as_str() {
             "cc1310" => Ok(CC1310),
             "cc1311p3" => Ok(CC1311P3),
             "cc2651p3" => Ok(CC2651P3),

@@ -120,8 +120,16 @@ impl Args {
         let arg = self
             .matches
             .value_of_lossy(ARG)
-            .context(MissingArgument { arg: ARG })?;
+            .context(MissingArgument { arg: ARG })?
+            .to_uppercase();
         Ok(arg)
+    }
+
+    pub fn is_scan(&self) -> bool {
+        match self.matches.subcommand() {
+            ("scan", _) => true,
+            _ => false,
+        }
     }
 
     fn device(&self) -> Result<Device> {

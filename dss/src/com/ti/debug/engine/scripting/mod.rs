@@ -11,7 +11,7 @@ use jni::{
     JNIEnv,
 };
 
-pub type Result<T, E = jni::errors::Error> = std::result::Result<T, E>;
+pub type Result<T, E = crate::Error> = std::result::Result<T, E>;
 
 pub struct DebugServer<'a> {
     env: JNIEnv<'a>,
@@ -33,7 +33,8 @@ impl<'a> DebugServer<'a> {
         let config_file = JObject::from(self.env.new_string(config_file)?);
 
         self.env
-            .call_method(self.instance, METHOD, SIGNATURE, &[From::from(config_file)])?
+            .call_method(self.instance, METHOD, SIGNATURE, &[From::from(config_file)])
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .v()?;
 
         Ok(())
@@ -47,7 +48,8 @@ impl<'a> DebugServer<'a> {
 
         let debug_session = self
             .env
-            .call_method(self.instance, METHOD, SIGNATURE, &[From::from(pattern)])?
+            .call_method(self.instance, METHOD, SIGNATURE, &[From::from(pattern)])
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .l()?;
 
         Ok(DebugSession::new(self.env.clone(), debug_session)?)
@@ -58,7 +60,8 @@ impl<'a> DebugServer<'a> {
         const SIGNATURE: &str = "()V";
 
         self.env
-            .call_method(self.instance, METHOD, SIGNATURE, &[])?
+            .call_method(self.instance, METHOD, SIGNATURE, &[])
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .v()?;
 
         Ok(())
@@ -112,7 +115,8 @@ impl<'a> Target<'a> {
         const SIGNATURE: &str = "()V";
 
         self.env
-            .call_method(self.instance, METHOD, SIGNATURE, &[])?
+            .call_method(self.instance, METHOD, SIGNATURE, &[])
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .v()?;
 
         Ok(())
@@ -123,7 +127,8 @@ impl<'a> Target<'a> {
         const SIGNATURE: &str = "()V";
 
         self.env
-            .call_method(self.instance, METHOD, SIGNATURE, &[])?
+            .call_method(self.instance, METHOD, SIGNATURE, &[])
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .v()?;
 
         Ok(())
@@ -135,7 +140,8 @@ impl<'a> Target<'a> {
 
         // TODO: Figure why reset cause Java exception on 1M devices.
         //self.env
-        //    .call_method(self.instance, METHOD, SIGNATURE, &[])?
+        //    .call_method(self.instance, METHOD, SIGNATURE, &[])
+        //    .map_err(|e| crate::extract_exception(&self.env, e))?
         //    .v()?;
 
         Ok(())
@@ -146,7 +152,8 @@ impl<'a> Target<'a> {
         const SIGNATURE: &str = "()V";
 
         self.env
-            .call_method(self.instance, METHOD, SIGNATURE, &[])?
+            .call_method(self.instance, METHOD, SIGNATURE, &[])
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .v()?;
 
         Ok(())
@@ -158,7 +165,8 @@ impl<'a> Target<'a> {
 
         let ret = self
             .env
-            .call_method(self.instance, METHOD, SIGNATURE, &[])?
+            .call_method(self.instance, METHOD, SIGNATURE, &[])
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .z()?;
 
         Ok(ret)
@@ -169,7 +177,8 @@ impl<'a> Target<'a> {
         const SIGNATURE: &str = "()V";
 
         self.env
-            .call_method(self.instance, METHOD, SIGNATURE, &[])?
+            .call_method(self.instance, METHOD, SIGNATURE, &[])
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .v()?;
 
         Ok(())
@@ -262,7 +271,8 @@ impl<'a> Memory<'a> {
                     From::from(type_size),
                     From::from(byte_swap),
                 ],
-            )?
+            )
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .v()?;
 
         Ok(())
@@ -289,7 +299,8 @@ impl<'a> Memory<'a> {
                     From::from(value),
                     From::from(type_size),
                 ],
-            )?
+            )
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .v()?;
 
         Ok(())
@@ -320,7 +331,8 @@ impl<'a> Memory<'a> {
                     From::from(array_obj),
                     From::from(type_size),
                 ],
-            )?
+            )
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .v()?;
 
         Ok(())
@@ -348,7 +360,8 @@ impl<'a> Memory<'a> {
                     From::from(type_size),
                     From::from(signed),
                 ],
-            )?
+            )
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .j()?;
 
         Ok(res)
@@ -378,7 +391,8 @@ impl<'a> Memory<'a> {
                     From::from(num_values),
                     From::from(signed),
                 ],
-            )?
+            )
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .l()?;
 
         let array: jlongArray = array_obj.into_inner();
@@ -401,7 +415,8 @@ impl<'a> Memory<'a> {
                 METHOD,
                 SIGNATURE,
                 &[From::from(register), From::from(value)],
-            )?
+            )
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .v()?;
 
         Ok(())
@@ -428,7 +443,8 @@ impl<'a> Expression<'a> {
 
         let res = self
             .env
-            .call_method(self.instance, METHOD, SIGNATURE, &[From::from(expression)])?
+            .call_method(self.instance, METHOD, SIGNATURE, &[From::from(expression)])
+            .map_err(|e| crate::extract_exception(&self.env, e))?
             .j()?;
 
         Ok(res)

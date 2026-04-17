@@ -17,6 +17,7 @@ members = [
 [dependencies]
 byte-unit = "3.0"
 clap = "2.33"
+libc = "0.2"
 path-clean = "0.1"
 path-slash = "0.1"
 rust-embed = "5.5"

@@ -35,13 +35,13 @@ file will be saved and the path will be displayed. If OFF is specified then no l
             .help("The serial number ID of the XDS110 debugger connected to the device, e.g. L4100847")
             .short("x")
             .long("xds")
-            .value_name("ID")
-            .required(true))
+            .value_name("ID"))
         .arg(Arg::with_name("device")
             .help("The kind of device connected to the XDS110 debugger")
             .short("d")
             .long("device")
             .value_name("KIND")
+            .case_insensitive(true)
             .possible_values(&[
                 "cc1310",
                 "cc1311p3",
@@ -63,8 +63,7 @@ file will be saved and the path will be displayed. If OFF is specified then no l
                 "cc2652r7",
                 "cc1354p10",
                 "cc1314r10"
-            ])
-            .required(true))
+            ]))
         .arg(Arg::with_name("spi-pins")
             .help("Override default SPI DIOs for external flash access, defaults to DIOs used for external flash on LaunchPads [8,9,10,20]")
             .short("s")
@@ -78,10 +77,15 @@ file will be saved and the path will be displayed. If OFF is specified then no l
             .value_delimiter(",")
             .require_delimiter(true)
             .validator(spi_pins_validate))
+        .subcommand(subcommand_scan())
         .subcommand(subcommand_info())
         .subcommand(subcommand_erase())
         .subcommand(subcommand_read())
         .subcommand(subcommand_write())
+}
+
+fn subcommand_scan() -> App<'static, 'static> {
+    SubCommand::with_name("scan").about("List all connected XDS110 debuggers and their serial numbers")
 }
 
 fn subcommand_info() -> App<'static, 'static> {

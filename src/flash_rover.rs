@@ -4,6 +4,8 @@
 // notice may not be copied, modified, or distributed except according to those terms.
 
 use std::io::{self, Read, Write};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
 
 use dss::com::ti::{
@@ -109,9 +111,27 @@ impl<'a> FlashRover<'a> {
             .set_config(&ccxml.to_string_lossy().to_owned())
             .context(DssError {})?;
 
-        let debug_session = debug_server
+        // Spawn a background thread that prints a hint if open_session() is still blocking
+        // after a few seconds.  A normal connection completes in under a second; anything
+        // longer almost certainly means the XDS110 firmware is being auto-updated by DSS.
+        let session_done = Arc::new(AtomicBool::new(false));
+        {
+            let flag = Arc::clone(&session_done);
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_secs(3));
+                if !flag.load(Ordering::Relaxed) {
+                    eprintln!(
+                        "Note: XDS110 firmware update in progress, please wait..."
+                    );
+                }
+            });
+        }
+
+        let open_result = debug_server
             .open_session(SESSION_PATTERN)
-            .context(DssError {})?;
+            .context(DssError {});
+        session_done.store(true, Ordering::Relaxed);
+        let debug_session = open_result?;
         debug_session.target.connect().context(DssError {})?;
 
         let firmware = Firmware::new(debug_session.memory.clone(), command.device)
